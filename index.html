@@ -214,7 +214,8 @@
       font-family: 'Lato', sans-serif;
       font-size: 0.95rem;
       cursor: pointer;
-      transition: border-color 0.2s;
+      /* FIX: pre-set the transition so the very first move is also animated */
+      transition: left 0.3s ease, top 0.3s ease, border-color 0.2s;
     }
 
     /* yes overlay */
@@ -339,7 +340,9 @@
     <p>There's only one right answer here 😄</p>
     <div class="buttons">
       <button class="btn-yes" onclick="sayYes()">Of course! 🌟</button>
-      <button class="btn-no" id="noBtn" onmouseover="runAway()" onclick="runAway()">No</button>
+      <!-- FIX: removed onclick="runAway()" — onmouseover handles desktop,
+           touchstart handles mobile. onclick was causing a double-fire. -->
+      <button class="btn-no" id="noBtn" onmouseover="runAway()">No</button>
       <div id="noPlaceholder" style="display:none; width:88px; height:48px;"></div>
     </div>
   </section>
@@ -369,7 +372,7 @@
       starsContainer.appendChild(s);
     }
 
-    // No button runs away — works on both mouse hover and touch tap
+    // No button runs away
     const noBtn = document.getElementById('noBtn');
     const placeholder = document.getElementById('noPlaceholder');
     let count = 0;
@@ -377,7 +380,6 @@
 
     function runAway() {
       count++;
-      // Show placeholder so the button row doesn't collapse
       placeholder.style.display = 'block';
 
       const margin = 16;
@@ -385,22 +387,26 @@
       const bh = noBtn.offsetHeight;
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const x = Math.floor(Math.random() * (vw - bw - margin * 2)) + margin;
-      const y = Math.floor(Math.random() * (vh - bh - margin * 2)) + margin;
 
-      noBtn.style.position   = 'fixed';
-      noBtn.style.left       = x + 'px';
-      noBtn.style.top        = y + 'px';
-      noBtn.style.margin     = '0';
-      noBtn.style.zIndex     = '50';
-      noBtn.style.transition = 'left 0.3s ease, top 0.3s ease';
+      // FIX: clamp so button never goes off-screen on any device
+      const maxX = Math.max(margin, vw - bw - margin);
+      const maxY = Math.max(margin, vh - bh - margin);
+      const x = Math.floor(Math.random() * maxX);
+      const y = Math.floor(Math.random() * maxY);
+
+      noBtn.style.position = 'fixed';
+      noBtn.style.margin   = '0';
+      noBtn.style.zIndex   = '50';
+      noBtn.style.left     = x + 'px';
+      noBtn.style.top      = y + 'px';
+      // transition is already set in CSS so the first move animates too
 
       if (count <= labels.length) noBtn.textContent = labels[count - 1];
     }
 
-    // Touch: fire on touchstart so it moves before the finger lifts
+    // FIX: touchstart so it moves before finger lifts on mobile
     noBtn.addEventListener('touchstart', function(e) {
-      e.preventDefault();   // stops the delayed click from also firing
+      e.preventDefault(); // prevents the ghost click / double-fire
       runAway();
     }, { passive: false });
 
